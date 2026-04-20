@@ -1,0 +1,8 @@
+Aloe Vera Gel,The Face Shop,25,350.0,Korea
+Vitamin C Serum,Garnier,18,550.0,France
+Hydrating Cleanser,CeraVe,20,700.0,USA
+Sunscreen SPF 50,Neutrogena,30,800.0,USA
+Matte Lipstick,Maybelline,15,450.0,USA
+Rose Water Toner,Mamaearth,22,300.0,India
+Night Repair Cream,Olay,12,900.0,UK
+BB Cream,Lakme,13,500.0,India

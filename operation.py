@@ -17,6 +17,20 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 INVOICE_FOLDER = os.path.join(BASE_DIR, "invoices")
 
 
+def _section_title(title):
+    print("\n" + "=" * 72)
+    print(title)
+    print("=" * 72)
+
+
+def _divider():
+    print("-" * 72)
+
+
+def _money(value):
+    return f"Rs {value:.2f}"
+
+
 def _find_product_key(products, user_input):
     query = user_input.strip().lower()
     for name in products:
@@ -25,11 +39,18 @@ def _find_product_key(products, user_input):
     return None
 
 def display_products(products):
-    print("\nAvailable Products:")
-    print(f"{'Product':<20} {'Brand':<15} {'Qty':<5} {'Price(Rs)':<10} {'Country'}")
-    for name, info in products.items():
+    _section_title("Available Products")
+    if not products:
+        print("No products available in inventory.")
+        return
+    print(f"{'Product':<20} {'Brand':<16} {'Qty':<8} {'Selling Price':<15} {'Country'}")
+    _divider()
+    for name, info in sorted(products.items()):
         sell_price = info["cost_price"] * 2
-        print(f"{name:<20} {info['brand']:<15} {info['quantity']:<5} {sell_price:<10.2f} {info['country']}")
+        print(
+            f"{name:<20} {info['brand']:<16} {info['quantity']:<8} "
+            f"{_money(sell_price):<15} {info['country']}"
+        )
 
 def generate_invoice(customer, sold_items, total):
     os.makedirs(INVOICE_FOLDER, exist_ok=True)
@@ -42,18 +63,21 @@ def generate_invoice(customer, sold_items, total):
         for item in sold_items:
             file.write(f"{item['name']:<20} {item['brand']:<15} {item['paid_qty']:<10} {item['free_qty']:<10} {item['price']:<12.2f} {item['total']:.2f}\n")
         file.write(f"\nTotal Amount: Rs {total:.2f}\n")
-    print(f"Invoice saved as {filename}")
+    print(f"\nSales invoice saved as: {filename}")
 
 def sell_products(products):
+    _section_title("Purchase Products")
     customer = input("Enter customer name: ").strip()
     if not customer:
         print("Customer name cannot be empty.")
         return
+
+    display_products(products)
     cart = []
     total = 0
 
     while True:
-        product_name = input("Enter product name to buy (or type 'done' to finish): ").strip()
+        product_name = input("\nEnter product name to buy (or type 'done' to finish): ").strip()
         if product_name.lower() == "done":
             break
         matched_product = _find_product_key(products, product_name)
@@ -86,24 +110,42 @@ def sell_products(products):
             "total": item_total
         })
         products[matched_product]["quantity"] -= total_items
-        print(f"Added {matched_product} - {qty} (+{free} free)")
+        print(
+            f"Added to cart: {matched_product} | Paid: {qty} | Free: {free} | "
+            f"Subtotal: {_money(item_total)}"
+        )
 
     if cart:
+        _section_title("Purchase Summary")
+        print(f"Customer: {customer}")
+        _divider()
+        print(f"{'Product':<20} {'Brand':<16} {'Paid Qty':<10} {'Free Qty':<10} {'Total'}")
+        _divider()
+        for item in cart:
+            print(
+                f"{item['name']:<20} {item['brand']:<16} {item['paid_qty']:<10} "
+                f"{item['free_qty']:<10} {_money(item['total'])}"
+            )
+        _divider()
+        print(f"Grand Total: {_money(total)}")
         generate_invoice(customer, cart, total)
         save_products(products)
     else:
         print("No items purchased.")
 
 def restock_products(products):
+    _section_title("Restock Products")
     vendor = input("Enter vendor/supplier name: ").strip()
     if not vendor:
         print("Vendor name cannot be empty.")
         return
+
+    display_products(products)
     restocked_items = []
     total = 0
 
     while True:
-        name = input("Enter product name to restock (or type 'done'): ").strip()
+        name = input("\nEnter product name to restock (or type 'done'): ").strip()
         if name.lower() == "done":
             break
         if not name:
@@ -152,6 +194,7 @@ def restock_products(products):
             "total": cost * qty
         })
         total += cost * qty
+        print(f"Restocked {qty} units of {name} at {_money(cost)} each.")
 
     now = datetime.datetime.now()
     os.makedirs(INVOICE_FOLDER, exist_ok=True)
@@ -165,4 +208,19 @@ def restock_products(products):
         file.write(f"\nTotal Restock Amount: Rs {total:.2f}\n")
 
     save_products(products)
-    print(f"Restock invoice saved as {filename}")
+    if restocked_items:
+        _section_title("Restock Summary")
+        print(f"Supplier: {vendor}")
+        _divider()
+        print(f"{'Product':<20} {'Brand':<16} {'Qty':<8} {'Cost':<14} {'Total'}")
+        _divider()
+        for item in restocked_items:
+            print(
+                f"{item['name']:<20} {item['brand']:<16} {item['qty']:<8} "
+                f"{_money(item['cost']):<14} {_money(item['total'])}"
+            )
+        _divider()
+        print(f"Total Restock Amount: {_money(total)}")
+        print(f"Restock invoice saved as: {filename}")
+    else:
+        print("No items were restocked.")
